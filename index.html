@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <title>Acumbamail Lead Chat</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --panel-soft: #fafbfc;
+      --text: #101828;
+      --muted: #667085;
+      --border: #d9dee7;
+      --primary: #2457d6;
+      --primary-hover: #1d46ad;
+      --success: #078c5b;
+      --success-soft: #e7f7ef;
+      --danger: #b42318;
+      --danger-soft: #fff0ed;
+      --shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+      grid-template-rows: minmax(0, 1fr);
+      gap: 10px;
+      width: 100%;
+      height: 100dvh;
+      min-height: 360px;
+      padding: 10px;
+    }
+
+    .composer,
+    .conversation,
+    .map-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .composer {
+      padding: 12px;
+    }
+
+    .chat-column {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 10px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .title {
+      min-width: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 7px;
+      min-width: 96px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 3px rgba(7, 140, 91, 0.12);
+    }
+
+    .dot.busy {
+      background: var(--primary);
+      box-shadow: 0 0 0 3px rgba(36, 87, 214, 0.12);
+    }
+
+    .dot.error {
+      background: var(--danger);
+      box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.12);
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 46px;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-width: 0;
+      height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 12px;
+      outline: none;
+      background: #ffffff;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    input:focus,
+    button:focus-visible {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(36, 87, 214, 0.16);
+    }
+
+    .icon-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 46px;
+      height: 44px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #ffffff;
+      cursor: pointer;
+      transition: background 0.16s ease, opacity 0.16s ease, transform 0.16s ease;
+    }
+
+    .icon-button:hover {
+      background: var(--primary-hover);
+    }
+
+    .icon-button:active {
+      transform: translateY(1px);
+    }
+
+    .icon-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+      transform: none;
+    }
+
+    .icon {
+      width: 19px;
+      height: 19px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .conversation {
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .map-panel {
+      position: relative;
+      min-height: 220px;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .map-title {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      z-index: 3;
+      max-width: calc(100% - 66px);
+      border-radius: 8px;
+      padding: 7px 9px;
+      background: rgba(255, 255, 255, 0.94);
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(16, 24, 40, 0.16);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .map-open {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 4;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--text);
+      text-decoration: none;
+      box-shadow: 0 2px 8px rgba(16, 24, 40, 0.2);
+    }
+
+    .map-frame {
+      position: absolute;
+      top: -100px;
+      left: 0;
+      width: 100%;
+      height: calc(100% + 120px);
+      border: 0;
+    }
+
+    .map-placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #f4f6f8;
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .map-panel.has-map .map-placeholder {
+      display: none;
+    }
+
+    .chat-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      padding: 10px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scroll-behavior: smooth;
+      background: var(--panel-soft);
+    }
+
+    .empty-state {
+      margin: auto;
+      max-width: 280px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .message-row {
+      display: grid;
+      grid-template-columns: minmax(0, auto);
+      gap: 4px;
+      width: 100%;
+    }
+
+    .message-row.outbound {
+      justify-content: end;
+    }
+
+    .message-row.inbound {
+      justify-content: start;
+    }
+
+    .message-row.system {
+      justify-content: center;
+    }
+
+    .bubble {
+      max-width: min(74vw, 620px);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.38;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+    }
+
+    .outbound .bubble {
+      justify-self: end;
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .inbound .bubble {
+      justify-self: start;
+      background: #ffffff;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .system .bubble {
+      max-width: calc(100vw - 28px);
+      background: #eef3ff;
+      color: #243b87;
+      box-shadow: none;
+      font-size: 12px;
+    }
+
+    .message-meta {
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1;
+    }
+
+    .outbound .message-meta {
+      text-align: right;
+    }
+
+    .message-actions {
+      display: flex;
+      justify-content: flex-start;
+      gap: 6px;
+      min-height: 28px;
+    }
+
+    .chip-button {
+      min-height: 28px;
+      border: 1px solid #afe8ce;
+      border-radius: 999px;
+      padding: 0 10px;
+      background: var(--success-soft);
+      color: #05603a;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chip-button:hover {
+      border-color: #82d9b1;
+      background: #dbf3e8;
+    }
+
+    .chip-button.sent,
+    .chip-button:disabled {
+      border-color: #d0d5dd;
+      background: #eef0f3;
+      color: #667085;
+      cursor: not-allowed;
+    }
+
+    .chip-button.sent:hover,
+    .chip-button:disabled:hover {
+      border-color: #d0d5dd;
+      background: #eef0f3;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    .text-button {
+      height: 28px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 0 8px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .text-button:hover {
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .toast {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      z-index: 20;
+      max-width: calc(100vw - 24px);
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #101828;
+      color: #ffffff;
+      font-size: 13px;
+      line-height: 1.3;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 720px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(220px, 34vh) minmax(0, 1fr);
+        gap: 8px;
+        padding: 8px;
+      }
+
+      .map-panel {
+        min-height: 190px;
+        height: auto;
+      }
+
+      .header {
+        grid-template-columns: 1fr;
+      }
+
+      .status {
+        justify-content: flex-start;
+      }
+
+      .input-row {
+        grid-template-columns: minmax(0, 1fr) 46px;
+      }
+
+      .icon-button {
+        order: 2;
+      }
+
+      .bubble {
+        max-width: calc(100vw - 56px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Acumbamail lead chatbot">
+    <section class="map-panel" id="mapPanel" aria-label="Land Portal map">
+      <div class="map-title">Land Portal Map</div>
+      <a class="map-open" id="mapOpenLink" href="#" target="_blank" rel="noopener noreferrer" title="Open in new tab" aria-label="Open map in new tab">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M15 3h6v6"></path>
+          <path d="M10 14 21 3"></path>
+          <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path>
+        </svg>
+      </a>
+      <iframe class="map-frame" id="mapFrame" title="Land Portal property map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <div class="map-placeholder" id="mapPlaceholder">The Land Portal map will load here after a lookup response includes a property link.</div>
+    </section>
+
+    <div class="chat-column">
+      <section class="composer" aria-label="Send a chatbot message">
+        <div class="header">
+          <div class="title">
+            <h1>Lead Manager Chat</h1>
+            <p class="subtitle">Acumbamail iframe assistant powered by Activepieces</p>
+          </div>
+          <div class="status" aria-live="polite">
+            <span class="dot" id="statusDot" aria-hidden="true"></span>
+            <span id="statusText">Ready</span>
+          </div>
+        </div>
+
+        <form class="input-row" id="chatForm" autocomplete="off">
+          <input id="messageInput" name="message" placeholder="Type message" aria-label="Message" />
+          <button class="icon-button" id="sendButton" type="submit" aria-label="Send message" title="Send">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m22 2-7 20-4-9-9-4Z"></path>
+              <path d="M22 2 11 13"></path>
+            </svg>
+          </button>
+        </form>
+
+        <div class="toolbar">
+          <button class="text-button" id="clearButton" type="button">Clear chat</button>
+        </div>
+      </section>
+
+      <section class="conversation" aria-label="Conversation">
+        <div class="chat-feed" id="chatFeed" aria-live="polite"></div>
+      </section>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const CONFIG = {
+        sendWebhookUrl: "https://cloud.activepieces.com/api/v1/webhooks/77eddckQdfy0Rbf8LEucz/sync",
+        crmWebhookUrl: "https://cloud.activepieces.com/api/v1/webhooks/eudPR04H5sEerx1r1I14H",
+        pollWebhookUrl: "",
+        pollEveryMs: 5000,
+        historyKey: "acumbamailLeadChatHistory_v1"
+      };
+
+      let messages = loadHistory();
+      let isSending = false;
+      let isPolling = false;
+      let toastTimer = 0;
+      let lastEmptyReturnNoticeAt = 0;
+      let activeRequestId = "";
+
+      function get(id) {
+        return document.getElementById(id);
+      }
+
+      function loadHistory() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(CONFIG.historyKey) || "[]");
+          return Array.isArray(saved) ? saved : [];
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function saveHistory() {
+        try {
+          localStorage.setItem(CONFIG.historyKey, JSON.stringify(messages.slice(-200)));
+        } catch (error) {
+          console.warn("Could not save chat history", error);
+        }
+      }
+
+      function setStatus(text, state) {
+        const label = get("statusText");
+        const dot = get("statusDot");
+        if (label) label.textContent = text;
+        if (dot) {
+          dot.className = "dot" + (state ? " " + state : "");
+        }
+      }
+
+      function showToast(text) {
+        const toast = get("toast");
+        if (!toast) return;
+        window.clearTimeout(toastTimer);
+        toast.textContent = text;
+        toast.classList.add("show");
+        toastTimer = window.setTimeout(function () {
+          toast.classList.remove("show");
+        }, 1800);
+      }
+
+      function formatTime(value) {
+        const date = value ? new Date(value) : new Date();
+        if (Number.isNaN(date.getTime())) return String(value || "");
+        return date.toLocaleString([], {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit"
+        });
+      }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function formatMessageHtml(value) {
+        const escaped = escapeHtml(value);
+        return escaped.replace(/(^|\n)(Name|County, St|County|State|Parcel|Acre|TLP Estimate|Link):/g, function (match, prefix, label) {
+          return prefix + "<strong>" + label + ":</strong>";
+        });
+      }
+
+      function makeMessage(direction, text, time, raw) {
+        return {
+          id: String(Date.now()) + "-" + Math.random().toString(16).slice(2),
+          direction: direction,
+          text: String(text || "").trim(),
+          time: time || formatTime(),
+          raw: raw || null
+        };
+      }
+
+      function makeRequestId() {
+        return "lead-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+      }
+
+      function extractLandPortalUrl(text) {
+        const match = String(text || "").match(/(?:^|\n)Link:\s*(https?:\/\/[^\s]+)/i);
+        return match ? match[1] : "";
+      }
+
+      function updateMapFromMessages() {
+        let mapUrl = "";
+        for (let index = messages.length - 1; index >= 0; index -= 1) {
+          if (messages[index].direction === "inbound") {
+            mapUrl = extractLandPortalUrl(messages[index].text);
+            if (mapUrl) break;
+          }
+        }
+
+        const panel = get("mapPanel");
+        const frame = get("mapFrame");
+        const link = get("mapOpenLink");
+        if (!panel || !frame || !link) return;
+
+        if (!mapUrl) {
+          panel.classList.remove("has-map");
+          frame.removeAttribute("src");
+          link.setAttribute("href", "#");
+          return;
+        }
+
+        panel.classList.add("has-map");
+        if (frame.getAttribute("src") !== mapUrl) frame.setAttribute("src", mapUrl);
+        link.setAttribute("href", mapUrl);
+      }
+
+      function renderMessages() {
+        const feed = get("chatFeed");
+        if (!feed) return;
+
+        if (!messages.length) {
+          feed.innerHTML = '<div class="empty-state">Messages from Activepieces will appear here after the flow responds.</div>';
+          updateMapFromMessages();
+          scrollToBottom();
+          return;
+        }
+
+        feed.innerHTML = messages.map(function (message, index) {
+          const direction = escapeHtml(message.direction || "system");
+          const crmAction = message.direction === "inbound"
+            ? '<div class="message-actions"><button class="chip-button' + (message.crmSent ? ' sent' : '') + '" type="button" data-crm-index="' + index + '"' + (message.crmSent ? ' disabled aria-disabled="true"' : '') + '>' + (message.crmSent ? 'Sent to CRM' : 'Send to CRM') + '</button></div>'
+            : "";
+
+          return '<article class="message-row ' + direction + '">' +
+            '<div class="bubble">' + formatMessageHtml(message.text) + '</div>' +
+            '<div class="message-meta">' + escapeHtml(message.time) + '</div>' +
+            crmAction +
+            '</article>';
+        }).join("");
+
+        Array.prototype.forEach.call(feed.querySelectorAll("[data-crm-index]"), function (button) {
+          button.addEventListener("click", function () {
+            if (button.disabled) return;
+            sendInboundToCrm(Number(button.getAttribute("data-crm-index")));
+          });
+        });
+
+        scrollToBottom();
+        updateMapFromMessages();
+      }
+
+      function scrollToBottom() {
+        const feed = get("chatFeed");
+        if (!feed) return;
+        window.requestAnimationFrame(function () {
+          feed.scrollTop = feed.scrollHeight;
+        });
+      }
+
+      async function postJson(url, payload) {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error("Webhook returned " + response.status);
+        }
+
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.indexOf("application/json") >= 0) {
+          return response.json();
+        }
+
+        return response.text();
+      }
+
+      async function postWithFallback(url, payload) {
+        try {
+          return await postJson(url, payload);
+        } catch (error) {
+          console.warn("Standard webhook POST failed, trying no-cors fallback", error);
+          await fetch(url, {
+            method: "POST",
+            mode: "no-cors",
+            body: JSON.stringify(payload)
+          });
+          return null;
+        }
+      }
+
+      function normalizeIncoming(data) {
+        if (typeof data === "string") {
+          try {
+            data = JSON.parse(data);
+          } catch (error) {
+            return data.trim() ? [{ text: data, time: formatTime(), raw: data }] : [];
+          }
+        }
+
+        let source = data && Object.prototype.hasOwnProperty.call(data, "body") ? data.body : data;
+        if (data && data.fields && Object.prototype.hasOwnProperty.call(data.fields, "body")) {
+          source = data.fields.body;
+        }
+        if (typeof source === "string") {
+          try {
+            source = JSON.parse(source);
+          } catch (error) {}
+        }
+        if (!source) return [];
+
+        function convert(item) {
+          if (typeof item === "string") {
+            return { text: item, time: formatTime(), raw: item };
+          }
+
+          if (!item || typeof item !== "object") {
+            return { text: String(item || ""), time: formatTime(), raw: item };
+          }
+
+          const text = item.Message || item.message || item.Text || item.text || item.body || item.reply || item.Response || item.response;
+          const time = item.Timestamp || item.timestamp || item.Time || item.time || item.createdAt || item.created_at;
+
+          if (text) {
+            return { text: String(text), time: formatTime(time), raw: item };
+          }
+
+          return {
+            text: Object.keys(item).map(function (key) {
+              return key + ": " + item[key];
+            }).join("\n"),
+            time: formatTime(time),
+            raw: item
+          };
+        }
+
+        if (Array.isArray(source)) return source.map(convert);
+        if (Array.isArray(source.messages)) return source.messages.map(convert);
+        if (Array.isArray(source.data)) return source.data.map(convert);
+        return [convert(source)];
+      }
+
+      function hasDuplicateIncoming(item) {
+        return messages.some(function (existing) {
+          return existing.direction === "inbound" &&
+            existing.text === item.text &&
+            existing.time === item.time;
+        });
+      }
+
+      function addIncomingMessages(data) {
+        const incoming = normalizeIncoming(data).filter(function (item) {
+          return item.text && !hasDuplicateIncoming(item);
+        });
+
+        incoming.forEach(function (item) {
+          messages.push(makeMessage("inbound", item.text, item.time, item.raw));
+        });
+
+        if (incoming.length) {
+          saveHistory();
+          renderMessages();
+          updateMapFromMessages();
+        }
+
+        return incoming.length;
+      }
+
+      async function readWebhookResponse(response) {
+        const text = await response.text();
+        if (!text.trim()) return null;
+
+        try {
+          return JSON.parse(text);
+        } catch (error) {
+          return text;
+        }
+      }
+
+      function scheduleReturnPolls(requestId) {
+        [5000, 12000, 20000, 30000, 45000, 60000].forEach(function (delay, index, delays) {
+          window.setTimeout(function () {
+            pollMessages(index === delays.length - 1, requestId);
+          }, delay);
+        });
+      }
+
+      async function sendMessage(event) {
+        if (event) event.preventDefault();
+        if (isSending) return;
+
+        const input = get("messageInput");
+        const button = get("sendButton");
+        const text = input ? input.value.trim() : "";
+        const option = "Look up Seller";
+        const requestId = makeRequestId();
+
+        if (!text) {
+          showToast("Type a message first");
+          if (input) input.focus();
+          return;
+        }
+
+        isSending = true;
+        activeRequestId = requestId;
+        if (button) button.disabled = true;
+        setStatus("Sending...", "busy");
+
+        messages.push(makeMessage("outbound", text));
+        saveHistory();
+        if (input) input.value = "";
+        renderMessages();
+
+        try {
+          const sendResponse = await postWithFallback(CONFIG.sendWebhookUrl, {
+            Text: text,
+            Option: option,
+            RequestId: requestId,
+            Source: "Acumbamail iframe",
+            SentAt: new Date().toISOString()
+          });
+          const received = addIncomingMessages(sendResponse);
+          setStatus(received ? "Updated" : "Waiting...", received ? "" : "busy");
+          showToast(received ? "Response received" : "Sent");
+          if (!received && CONFIG.pollWebhookUrl) {
+            scheduleReturnPolls(requestId);
+          } else if (!received) {
+            messages.push(makeMessage("system", "The send webhook responded, but it did not include a Message yet."));
+            saveHistory();
+            renderMessages();
+            setStatus("No response", "error");
+          }
+        } catch (error) {
+          console.error("Send failed", error);
+          messages.push(makeMessage("system", "Send failed. Check the Activepieces webhook URL or CORS settings."));
+          saveHistory();
+          renderMessages();
+          setStatus("Send failed", "error");
+          showToast("Send failed");
+        } finally {
+          isSending = false;
+          if (button) button.disabled = false;
+        }
+      }
+
+      async function pollMessages(showEmptyNotice, requestId) {
+        const lookupRequestId = requestId || activeRequestId;
+        if (isPolling || isSending || !CONFIG.pollWebhookUrl || !lookupRequestId) return;
+        isPolling = true;
+
+        try {
+          setStatus("Checking...", "busy");
+          const separator = CONFIG.pollWebhookUrl.indexOf("?") >= 0 ? "&" : "?";
+          const response = await fetch(CONFIG.pollWebhookUrl + separator + "requestId=" + encodeURIComponent(lookupRequestId), {
+            method: "GET",
+            headers: { "Accept": "application/json" },
+            cache: "no-store"
+          });
+
+          if (!response.ok) {
+            throw new Error("Poll returned " + response.status);
+          }
+
+          const data = await readWebhookResponse(response);
+          const added = addIncomingMessages(data);
+
+          if (added) {
+            if (lookupRequestId === activeRequestId) activeRequestId = "";
+            setStatus("Updated", "");
+          } else if (showEmptyNotice && Date.now() - lastEmptyReturnNoticeAt > 15000) {
+            lastEmptyReturnNoticeAt = Date.now();
+            messages.push(makeMessage("system", "The return webhook responded, but it did not include a Message for this request yet."));
+            saveHistory();
+            renderMessages();
+            setStatus("Return empty", "error");
+          } else {
+            setStatus("Ready", "");
+          }
+        } catch (error) {
+          console.warn("Poll failed", error);
+          setStatus("Poll failed", "error");
+        } finally {
+          isPolling = false;
+        }
+      }
+
+      async function sendInboundToCrm(index) {
+        const message = messages[index];
+        if (!message || message.crmSent) return;
+
+        try {
+          setStatus("Sending CRM...", "busy");
+          await postWithFallback(CONFIG.crmWebhookUrl, {
+            Text: message.text,
+            Option: "Send to CRM",
+            SourceMessageTime: message.time,
+            Source: "Acumbamail iframe",
+            SentAt: new Date().toISOString()
+          });
+          message.crmSent = true;
+          saveHistory();
+          renderMessages();
+          setStatus("Ready", "");
+          showToast("Sent to CRM");
+        } catch (error) {
+          console.error("CRM send failed", error);
+          setStatus("CRM failed", "error");
+          showToast("CRM send failed");
+        }
+      }
+
+      function clearChat() {
+        messages = [];
+        saveHistory();
+        renderMessages();
+        setStatus("Ready", "");
+        showToast("Chat cleared");
+      }
+
+      function bindEvents() {
+        const form = get("chatForm");
+        const clear = get("clearButton");
+        const input = get("messageInput");
+
+        if (form) form.addEventListener("submit", sendMessage);
+        if (clear) clear.addEventListener("click", clearChat);
+        if (input) {
+          input.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+              sendMessage(event);
+            }
+          });
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        bindEvents();
+        renderMessages();
+        pollMessages();
+        window.setInterval(pollMessages, CONFIG.pollEveryMs);
+      });
+    })();
+  </script>
+</body>
+</html>
